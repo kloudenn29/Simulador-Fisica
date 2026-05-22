@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Velocidades - PIA Klou</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ================= DISEÑO NEON ================= */
+    :root {
+      --bg-color: #0b0c10;
+      --card-bg: #1f2833;
+      --neon-cyan: #66fcf1;
+      --neon-blue: #45a29e;
+      --neon-pink: #ff007f;
+      --neon-yellow: #fce300;
+      --text-main: #c5c6c7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(102, 252, 241, 0.5);
+      margin-bottom: 5px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .subtitle {
+      color: var(--neon-pink);
+      font-family: 'Space Mono', monospace;
+      margin-bottom: 25px;
+      font-size: 0.9rem;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 2px solid var(--neon-blue);
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 0 20px rgba(69, 162, 158, 0.2);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ================= CASOS DE ESTUDIO ================= */
+    .presets-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+
+    .btn-preset {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: 0.3s;
+      text-align: center;
+    }
+
+    .btn-preset:hover, .btn-preset.activo {
+      background: var(--neon-cyan);
+      color: var(--bg-color);
+      box-shadow: 0 0 10px var(--neon-cyan);
+      font-weight: bold;
+    }
+
+    .btn-block {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    /* ================= CONTROLES ================= */
+    .input-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      color: var(--neon-pink);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--neon-cyan);
+    }
+
+    .valor-display {
+      font-family: 'Space Mono', monospace;
+      color: var(--neon-yellow);
+      font-size: 1.2rem;
+      float: right;
+    }
+
+    .btn-calcular {
+      background: var(--neon-pink);
+      color: white;
+      border: none;
+      padding: 15px;
+      font-size: 1.1rem;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 800;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+      text-transform: uppercase;
+      box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .btn-calcular:hover {
+      background: #ff3399;
+      box-shadow: 0 0 25px rgba(255, 0, 127, 0.7);
+      transform: scale(1.02);
+    }
+
+    /* ================= SIMULADOR DINÁMICO ================= */
+    .pista-container {
+      margin-top: 30px;
+      position: relative;
+      height: 250px;
+      background: linear-gradient(180deg, rgba(11,12,16,1) 0%, rgba(31,40,51,1) 100%);
+      border-radius: 10px;
+      border: 1px dashed var(--neon-cyan);
+      overflow: hidden;
+      box-shadow: inset 0 0 20px rgba(102, 252, 241, 0.1);
+    }
+
+    .linea-pista {
+      width: 100%;
+      height: 2px;
+      background: rgba(255,255,255,0.05);
+      position: absolute;
+    }
+
+    .objeto {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: translateX(-50%);
+    }
+
+    .icono-dinamico {
+      font-size: 35px;
+      filter: drop-shadow(0 0 8px currentColor);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .etiqueta-obj {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      margin-top: 2px;
+      font-weight: bold;
+      background: rgba(0,0,0,0.6);
+      padding: 2px 5px;
+      border-radius: 5px;
+    }
+
+    #obj-marco1 { color: var(--neon-cyan); top: 15px; }
+    #obj-marco2 { color: var(--neon-yellow); top: 95px; }
+    #obj-evento { color: var(--neon-pink); top: 175px; }
+
+    /* ================= FRACCIONES HERMOSAS ================= */
+    .procedimiento {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.3rem;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+    }
+
+    .mensaje-espera {
+      color: var(--text-main);
+      font-size: 1.1rem;
+      opacity: 0.8;
+      border: 2px dashed var(--neon-blue);
+      padding: 30px;
+      border-radius: 10px;
+      background: rgba(69, 162, 158, 0.05);
+    }
+
+    .procesando {
+      color: var(--neon-yellow);
+      animation: parpadeo 1s infinite;
+    }
+
+    @keyframes parpadeo {
+      0%, 100% { opacity: 1; text-shadow: 0 0 10px var(--neon-yellow); }
+      50% { opacity: 0.4; }
+    }
+
+    .ecuacion {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .fraccion {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      vertical-align: middle;
+    }
+
+    .num {
+      border-bottom: 3px solid var(--neon-cyan);
+      padding: 0 10px 5px 10px;
+    }
+
+    .den {
+      padding: 5px 10px 0 10px;
+    }
+
+    .resultado-final {
+      color: var(--neon-yellow);
+      font-size: 1.8rem;
+      font-weight: bold;
+      text-shadow: 0 0 15px rgba(252, 227, 0, 0.6);
+      margin-top: 20px;
+      border: 2px dashed var(--neon-yellow);
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Simulador Relativista</h1>
+  <div class="subtitle">PIA Sistemas Digitales & Física - Mod. Velocidades</div>
+
+  <div class="container">
+    
+    <div class="panel">
+      
+      <button class="btn-preset btn-block activo" onclick="cargarProblema('libre', this)">Modo Libre</button>
+      <div class="presets-container">
+        <button class="btn-preset" onclick="cargarProblema('radar', this)">Radar</button>
+        <button class="btn-preset" onclick="cargarProblema('naves', this)">Naves</button>
+        <button class="btn-preset" onclick="cargarProblema('tierra', this)">Tierra</button>
+      </div>
+
+      <div class="input-group">
+        <label>Velocidad entre los marcos (V)</label>
+        <input type="range" id="input-V" min="-0.99" max="0.99" step="0.01" value="0.50">
+        <span class="valor-display" id="val-V">0.50 c</span>
+      </div>
+
+      <div class="input-group">
+        <label>Velocidad del evento resp. a M2 (V₂)</label>
+        <input type="range" id="input-V2" min="-0.99" max="0.99" step="0.01" value="-0.85">
+        <span class="valor-display" id="val-V2">-0.85 c</span>
+      </div>
+
+      <button class="btn-calcular" id="btn-calcular">Calcular Procedimiento</button>
+
+      <div class="pista-container" id="pista">
+        <div class="linea-pista" style="top: 45px;"></div>
+        <div class="linea-pista" style="top: 125px;"></div>
+        <div class="linea-pista" style="top: 205px;"></div>
+
+        <div class="objeto" id="obj-marco1">
+          <div class="icono-dinamico" id="icono-m1">🔵</div>
+          <span class="etiqueta-obj" id="label-m1">M1 (Reposo)</span>
+        </div>
+
+        <div class="objeto" id="obj-marco2">
+          <div class="icono-dinamico" id="icono-m2">🟢</div>
+          <span class="etiqueta-obj" id="label-m2">M2 (Velocidad V)</span>
+        </div>
+
+        <div class="objeto" id="obj-evento">
+          <div class="icono-dinamico" id="icono-ev">🔴</div>
+          <span class="etiqueta-obj" id="label-ev">Evento (V₁)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="procedimiento" id="zona-calculo">
+        <div class="mensaje-espera" id="mensaje-espera">
+          Ajusta las velocidades o selecciona un problema de tus apuntes. Luego presiona "CALCULAR" para generar el desarrollo.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const rangeV = document.getElementById('input-V');
+    const rangeV2 = document.getElementById('input-V2');
+    const dispV = document.getElementById('val-V');
+    const dispV2 = document.getElementById('val-V2');
+    const btnCalcular = document.getElementById('btn-calcular');
+    const zonaCalculo = document.getElementById('zona-calculo');
+
+    // Elementos de la animación
+    const objMarco1 = document.getElementById('obj-marco1');
+    const objMarco2 = document.getElementById('obj-marco2');
+    const objEvento = document.getElementById('obj-evento');
+    const pista = document.getElementById('pista');
+
+    // Textos e Iconos Dinámicos
+    const iconoM1 = document.getElementById('icono-m1');
+    const labelM1 = document.getElementById('label-m1');
+    const iconoM2 = document.getElementById('icono-m2');
+    const labelM2 = document.getElementById('label-m2');
+    const iconoEv = document.getElementById('icono-ev');
+    const labelEv = document.getElementById('label-ev');
+
+    let posMarco2 = pista.clientWidth / 2;
+    let posEvento = pista.clientWidth / 2;
+
+    // SISTEMA DE PROBLEMAS (De tu cuaderno)
+    function cargarProblema(tipo, btnDOM) {
+      // Quitar clase activa de todos los botones
+      document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('activo'));
+      btnDOM.classList.add('activo');
+
+      if(tipo === 'radar') {
+        rangeV.value = 0.50;
+        rangeV2.value = -0.85;
+        iconoM1.innerText = "📡"; labelM1.innerText = "Estación Radar";
+        iconoM2.innerText = "🛸"; labelM2.innerText = "Nave";
+        iconoEv.innerText = "⚡"; labelEv.innerText = "Electrón";
+      } 
+      else if(tipo === 'naves') {
+        rangeV.value = 0.30;
+        rangeV2.value = -0.70;
+        iconoM1.innerText = "🧍‍♂️"; labelM1.innerText = "Hombre";
+        iconoM2.innerText = "🚀"; labelM2.innerText = "Nave A";
+        iconoEv.innerText = "🛸"; labelEv.innerText = "Nave B";
+      }
+      else if(tipo === 'tierra') {
+        rangeV.value = -0.90;
+        rangeV2.value = 0.60;
+        iconoM1.innerText = "🌍"; labelM1.innerText = "Tierra";
+        iconoM2.innerText = "🛰️"; labelM2.innerText = "Observador";
+        iconoEv.innerText = "🚀"; labelEv.innerText = "Nave";
+      }
+      else { // Modo Libre
+        rangeV.value = 0.50;
+        rangeV2.value = 0.50;
+        iconoM1.innerText = "🔵"; labelM1.innerText = "Marco 1";
+        iconoM2.innerText = "🟢"; labelM2.innerText = "Marco 2";
+        iconoEv.innerText = "🔴"; labelEv.innerText = "Evento";
+      }
+
+      actualizarValoresEnVivo();
+      
+      // Reiniciar la zona de cálculo
+      zonaCalculo.innerHTML = `
+        <div class="mensaje-espera">
+          Datos de ${labelM1.innerText} cargados. Presiona "CALCULAR" para resolver.
+        </div>
+      `;
+    }
+
+    function actualizarValoresEnVivo() {
+      let V = parseFloat(rangeV.value);
+      let V2 = parseFloat(rangeV2.value);
+
+      dispV.innerText = (V > 0 ? "+" : "") + V.toFixed(2) + " c";
+      dispV2.innerText = (V2 > 0 ? "+" : "") + V2.toFixed(2) + " c";
+
+      // Limpiar resultados si el usuario mueve el slider a mano
+      if(document.querySelector('.resultado-final')) {
+        zonaCalculo.innerHTML = `
+          <div class="mensaje-espera">
+            Valores modificados. Presiona "CALCULAR" para actualizar.
+          </div>
+        `;
+      }
+      return (V2 + V) / (1 + (V2 * V)); 
+    }
+
+    function generarProcedimiento() {
+      zonaCalculo.innerHTML = `<div class="mensaje-espera procesando">[ SISTEMA CALCULANDO DATOS... ]</div>`;
+      
+      setTimeout(() => {
+        let V = parseFloat(rangeV.value);
+        let V2 = parseFloat(rangeV2.value);
+
+        let numerador = V2 + V;
+        let multiplicacion = V2 * V;
+        let denominador = 1 + multiplicacion;
+        let V1 = numerador / denominador;
+
+        zonaCalculo.innerHTML = `
+          <div style="color: var(--neon-pink); font-size: 1rem; margin-bottom: 10px;">Fórmula Aplicada:</div>
+          <div class="ecuacion">
+            <span>V₁ = </span>
+            <div class="fraccion">
+              <span class="num">V₂ + V</span>
+              <span class="den">1 + (V₂ * V)/c²</span>
+            </div>
+          </div>
+
+          <div style="color: var(--neon-pink); font-size: 1rem; margin-top: 15px; margin-bottom: 10px;">Sustitución:</div>
+          <div class="ecuacion">
+            <span>V₁ = </span>
+            <div class="fraccion">
+              <span class="num">${V2.toFixed(2)}c + (${V.toFixed(2)}c)</span>
+              <span class="den">1 + (${V2.toFixed(2)})(${V.toFixed(2)})</span>
+            </div>
+          </div>
+
+          <div class="ecuacion" style="margin-top: 10px;">
+            <span>V₁ = </span>
+            <div class="fraccion">
+              <span class="num">${numerador.toFixed(4)}c</span>
+              <span class="den">1 + (${multiplicacion.toFixed(4)})</span>
+            </div>
+          </div>
+
+          <div class="resultado-final">
+            V₁ = ${V1.toFixed(4)} c
+          </div>
+        `;
+      }, 600);
+    }
+
+    function animar() {
+      let V = parseFloat(rangeV.value);
+      let V1 = (parseFloat(rangeV2.value) + V) / (1 + (parseFloat(rangeV2.value) * V));
+      let ancho = pista.clientWidth;
+      let velocidadBase = 3.5; 
+
+      objMarco1.style.left = (ancho / 2) + "px";
+
+      posMarco2 += (V * velocidadBase);
+      if(posMarco2 > ancho + 30) posMarco2 = -30;
+      if(posMarco2 < -30) posMarco2 = ancho + 30;
+      objMarco2.style.left = posMarco2 + "px";
+
+      posEvento += (V1 * velocidadBase);
+      if(posEvento > ancho + 30) posEvento = -30;
+      if(posEvento < -30) posEvento = ancho + 30;
+      objEvento.style.left = posEvento + "px";
+
+      requestAnimationFrame(animar);
+    }
+
+    rangeV.addEventListener('input', actualizarValoresEnVivo);
+    rangeV2.addEventListener('input', actualizarValoresEnVivo);
+    btnCalcular.addEventListener('click', generarProcedimiento);
+
+    actualizarValoresEnVivo();
+    animar();
+
+  </script>
+</body>
+</html>
